@@ -88,7 +88,28 @@ class AddToGroup(gui_base.GuiCommandNeedsSelection):
             return
 
         self.ui = Gui.draftToolBar
-        objs = [obj for obj in self.doc.Objects if groups.is_group(obj)]
+        selected = Gui.Selection.getSelection()
+
+        def is_invalid_target(obj):
+            if obj in selected:
+                return True
+            for parent in selected:
+                stack = list(getattr(parent, "Group", []))
+                while stack:
+                    child = stack.pop()
+                    if child == obj:
+                        return True
+                    stack.extend(getattr(child, "Group", []))
+
+                for candidate in self.doc.Objects:
+                    if parent in getattr(candidate, "Group", []):
+                        if candidate == obj:
+                            return True
+            return False
+
+        objs = [
+            obj for obj in self.doc.Objects if groups.is_group(obj) and not is_invalid_target(obj)
+        ]
         objs.sort(key=lambda obj: obj.Label)
         self.objects = [None] + [None] + objs
         self.labels = (
