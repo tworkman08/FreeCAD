@@ -91,9 +91,14 @@ class AddToGroup(gui_base.GuiCommandNeedsSelection):
         selected = Gui.Selection.getSelection()
 
         def is_invalid_target(obj):
+            """Exclude selected objects, their descendants, and their direct parent."""
             if obj in selected:
                 return True
+
             for parent in selected:
+                if obj in parent.InList and groups.is_group(obj):
+                    return True
+
                 stack = list(getattr(parent, "Group", []))
                 while stack:
                     child = stack.pop()
@@ -101,10 +106,6 @@ class AddToGroup(gui_base.GuiCommandNeedsSelection):
                         return True
                     stack.extend(getattr(child, "Group", []))
 
-                for candidate in self.doc.Objects:
-                    if parent in getattr(candidate, "Group", []):
-                        if candidate == obj:
-                            return True
             return False
 
         objs = [
